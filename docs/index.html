@@ -86,6 +86,11 @@ header p {
     margin-top: 10px;
 }
 
+.stock {
+    margin-top: 8px;
+    color: #555;
+}
+
 footer {
     margin-top: 30px;
     background: #333;
@@ -108,16 +113,7 @@ footer {
 </div>
 
 <div class="products" id="products">
-
-    <div class="card">
-        <img src="images/coffee.jpg" alt="កាហ្វេ">
-        <div class="card-content">
-            <h2>កាហ្វេ</h2>
-            <div class="category">គ្រឿងម្សៅ</div>
-            <div class="price">25,000៛</div>
-        </div>
-    </div>
-
+    <p>កំពុងផ្ទុកទំនិញ...</p>
 </div>
 
 <footer>
@@ -126,21 +122,133 @@ footer {
 
 <script>
 const search = document.getElementById("search");
-const cards = document.querySelectorAll(".card");
+const products = document.getElementById("products");
+
+let allProducts = [];
+
+function showProducts(list) {
+    products.innerHTML = "";
+
+    if (list.length === 0) {
+        products.innerHTML = "<p>រកមិនឃើញទំនិញទេ</p>";
+        return;
+    }
+
+    list.forEach(product => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const image = product.image
+            ? "images/" + product.image
+            : "";
+
+        card.innerHTML = `
+            ${image ? `<img src="${image}" alt="${product.name}">` : ""}
+            <div class="card-content">
+                <h2>${product.name}</h2>
+                <div class="category">${product.category}</div>
+                <div class="price">
+                    ${Number(product.sell_price).toLocaleString()}៛
+            </div>
+
+                <div class="stock">
+                                                     ស្តុក: ${product.stock}
+            </div>
+
+                <button onclick="orderProduct(${product.id})">
+                   🛒 កម្ម៉ង់
+                </button>
+
+            </div>
+        `;
+
+        products.appendChild(card);
+    });
+}
+
+fetch("https://sovanna-coffee-api.onrender.com/api/products")
+    .then(response => response.json())
+    .then(data => {
+        allProducts = data;
+        showProducts(allProducts);
+    })
+    .catch(error => {
+        products.innerHTML =
+            "<p>មិនអាចភ្ជាប់ទៅ Server បានទេ</p>";
+        console.error(error);
+    });
 
 search.addEventListener("input", function () {
     const text = search.value.toLowerCase();
 
-    cards.forEach(card => {
-        const name = card.innerText.toLowerCase();
+    const filtered = allProducts.filter(product =>
+        product.name.toLowerCase().includes(text) ||
+        product.category.toLowerCase().includes(text)
+    );
 
-        if (name.includes(text)) {
-            card.style.display = "";
-        } else {
-            card.style.display = "none";
-        }
-    });
+    showProducts(filtered);
 });
+async function orderProduct(productId) {
+    const product = allProducts.find(p => p.id === productId);
+
+    if (!product) {
+        alert("រកមិនឃើញទំនិញ");
+        return;
+    }
+
+    const name = prompt("👤 សូមបញ្ចូលឈ្មោះរបស់អ្នក៖");
+    if (!name) return;
+
+    const phone = prompt("📞 សូមបញ្ចូលលេខទូរស័ព្ទ៖");
+    if (!phone) return;
+
+    const address = prompt("📍 សូមបញ្ចូលអាសយដ្ឋានដឹកជញ្ជូន៖");
+    if (!address) return;
+
+    const quantity = prompt(
+        "🔢 សូមបញ្ចូលចំនួន " + product.name + "៖",
+        "1"
+    );
+
+    if (!quantity) return;
+
+    try {
+        const response = await fetch(
+            "https://sovanna-coffee-api.onrender.com/api/orders",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    customer_name: name,
+                    phone: phone,
+                    address: address
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert(
+                "✅ កម្ម៉ង់បានទទួល!\n\n" +
+                "លេខកម្ម៉ង់: " + data.order_id + "\n" +
+                "ទំនិញ: " + product.name + "\n" +
+                "ចំនួន: " + quantity + "\n" +
+                "ឈ្មោះ: " + name + "\n" +
+                "ទូរស័ព្ទ: " + phone
+            );
+        } else {
+            alert("❌ " + (data.error || "ការកម្ម៉ង់មិនបានសម្រេច"));
+        }
+
+    } catch (error) {
+        alert("❌ មិនអាចភ្ជាប់ទៅ Server បានទេ");
+        console.error(error);
+    }
+}
+
 </script>
 
 </body>
