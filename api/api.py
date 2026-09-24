@@ -26,6 +26,31 @@ def init_database():
                     image TEXT
                 )
             """)
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS orders (
+                    id SERIAL PRIMARY KEY,
+                    customer_name TEXT NOT NULL,
+                    phone TEXT NOT NULL,
+                    address TEXT NOT NULL,
+                    total DOUBLE PRECISION DEFAULT 0,
+                    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status TEXT DEFAULT 'ថ្មី'
+                )
+            """)
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS order_items (
+                    id SERIAL PRIMARY KEY,
+                    order_id INTEGER NOT NULL,
+                    product_id INTEGER NOT NULL,
+                    product_name TEXT NOT NULL,
+                    quantity INTEGER NOT NULL,
+                    price DOUBLE PRECISION NOT NULL,
+                    subtotal DOUBLE PRECISION NOT NULL
+                )
+            """)
+
         conn.commit()
 
 
@@ -151,6 +176,78 @@ def update_product(product_id):
         "message": "បានកែទំនិញ",
         "id": product_id
     })
+
+# POST - ទទួលកម្ម៉ង់ពី Website
+@app.route("/api/orders", methods=["POST"])
+def create_order():
+    data = request.get_json()
+
+    customer_name = data.get("customer_name")
+    phone = data.get("phone")
+    address = data.get("address")
+    items = data.get("items", [])
+
+    if not customer_name or not phone or not address:
+        return jsonify({
+            "error": "សូមបំពេញឈ្មោះ លេខទូរស័ព្ទ និងអាសយដ្ឋាន"
+        }), 400
+
+    if not items:
+        return jsonify({
+            "error": "មិនមានទំនិញក្នុងកម្ម៉ង់"
+        }), 400
+
+    total = 0
+
+    for item in items:
+        quantity = int(item.get("quantity", 0))
+        price = float(item.get("sell_price", 0))
+        total += quantity * price
+
+    with psycopg.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                INSERT INTO orders
+                (customer_name, phone, address, total)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+            """, (
+                customer_name,
+                phone,
+                address,
+                total
+            ))
+
+            order_id = cur.fetchone()[0]
+
+            for item in items:
+                product_id = int(item.get("id"))
+                product_name = item.get("name")
+                quantity = int(item.get("quantity"))
+                price = float(item.get("sell_price"))
+                subtotal = quantity * price
+
+                cur.execute("""
+                    INSERT INTO order_items
+                    (order_id, product_id, product_name, quantity, price, subtotal)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    order_id,
+                    product_id,
+                    product_name,
+                    quantity,
+                    price,
+                    subtotal
+                ))
+
+        conn.commit()
+
+    return jsonify({
+        "message": "កម្ម៉ង់បានជោគជ័យ",
+        "order_id": order_id,
+        "total": total
+    }), 201
 
 
 @app.route("/")
