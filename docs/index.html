@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>ហាងសុវណ្ណាលក់គ្រឿងកាហ្វេ</title>
 
 <style>
@@ -91,6 +92,75 @@ header p {
     color: #555;
 }
 
+.card button {
+    margin-top: 12px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #5b351f;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.card button:hover {
+    opacity: 0.9;
+}
+
+.cart-box {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.cart-item {
+    border-bottom: 1px solid #ddd;
+    padding: 15px 0;
+}
+
+.cart-item-name {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.quantity button {
+    width: 35px;
+    height: 35px;
+    margin: 5px;
+    border: none;
+    border-radius: 6px;
+    background: #5b351f;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.remove-btn {
+    background: #c62828 !important;
+}
+
+.cart-total {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+.checkout-btn {
+    width: 100%;
+    padding: 15px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 10px;
+    background: #168039;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
 footer {
     margin-top: 30px;
     background: #333;
@@ -109,11 +179,33 @@ footer {
 </header>
 
 <div class="search">
-    <input type="text" id="search" placeholder="🔎 ស្វែងរកទំនិញ...">
+    <input
+        type="text"
+        id="search"
+        placeholder="🔎 ស្វែងរកទំនិញ..."
+    >
 </div>
 
 <div class="products" id="products">
     <p>កំពុងផ្ទុកទំនិញ...</p>
+</div>
+
+<div class="cart-box">
+
+    <h2>🛒 កន្ត្រកទំនិញ</h2>
+
+    <div id="cartItems">
+        មិនទាន់មានទំនិញក្នុងកន្ត្រក
+    </div>
+
+    <div class="cart-total" id="cartTotal">
+        សរុប៖ 0៛
+    </div>
+
+    <button class="checkout-btn" onclick="checkoutCart()">
+        ✅ កម្ម៉ង់ទាំងអស់
+    </button>
+
 </div>
 
 <footer>
@@ -121,12 +213,20 @@ footer {
 </footer>
 
 <script>
+
 const search = document.getElementById("search");
 const products = document.getElementById("products");
 
 let allProducts = [];
+let cart = [];
+
+
+/* =========================
+   បង្ហាញទំនិញ
+========================= */
 
 function showProducts(list) {
+
     products.innerHTML = "";
 
     if (list.length === 0) {
@@ -135,6 +235,7 @@ function showProducts(list) {
     }
 
     list.forEach(product => {
+
         const card = document.createElement("div");
         card.className = "card";
 
@@ -143,20 +244,30 @@ function showProducts(list) {
             : "";
 
         card.innerHTML = `
-            ${image ? `<img src="${image}" alt="${product.name}">` : ""}
+            ${
+                image
+                ? `<img src="${image}" alt="${product.name}">`
+                : ""
+            }
+
             <div class="card-content">
+
                 <h2>${product.name}</h2>
-                <div class="category">${product.category}</div>
+
+                <div class="category">
+                    ${product.category || ""}
+                </div>
+
                 <div class="price">
-                    ${Number(product.sell_price).toLocaleString()}៛
-            </div>
+                    ${Number(product.sell_price || 0).toLocaleString()}៛
+                </div>
 
                 <div class="stock">
-                                                     ស្តុក: ${product.stock}
-            </div>
+                    ស្តុក: ${product.stock}
+                </div>
 
-                <button onclick="orderProduct(${product.id})">
-                   🛒 កម្ម៉ង់
+                <button onclick="addToCart(${product.id})">
+                    🛒 បន្ថែមទៅកន្ត្រក
                 </button>
 
             </div>
@@ -166,88 +277,435 @@ function showProducts(list) {
     });
 }
 
+
+/* =========================
+   ទាញទំនិញពី API
+========================= */
+
 fetch("https://sovanna-coffee-api.onrender.com/api/products")
+
     .then(response => response.json())
+
     .then(data => {
+
         allProducts = data;
+
         showProducts(allProducts);
+
     })
+
     .catch(error => {
+
         products.innerHTML =
             "<p>មិនអាចភ្ជាប់ទៅ Server បានទេ</p>";
+
         console.error(error);
+
     });
 
+
+/* =========================
+   ស្វែងរកទំនិញ
+========================= */
+
 search.addEventListener("input", function () {
+
     const text = search.value.toLowerCase();
 
     const filtered = allProducts.filter(product =>
-        product.name.toLowerCase().includes(text) ||
-        product.category.toLowerCase().includes(text)
+
+        (product.name || "")
+            .toLowerCase()
+            .includes(text)
+
+        ||
+
+        (product.category || "")
+            .toLowerCase()
+            .includes(text)
+
     );
 
     showProducts(filtered);
+
 });
-async function orderProduct(productId) {
-    const product = allProducts.find(p => p.id === productId);
+
+
+/* =========================
+   បន្ថែមទំនិញចូល Cart
+========================= */
+
+function addToCart(productId) {
+
+    const product =
+        allProducts.find(p => p.id === productId);
 
     if (!product) {
+
         alert("រកមិនឃើញទំនិញ");
+
         return;
     }
 
-    const name = prompt("👤 សូមបញ្ចូលឈ្មោះរបស់អ្នក៖");
+    if (Number(product.stock) <= 0) {
+
+        alert("❌ ទំនិញនេះអស់ស្តុក");
+
+        return;
+    }
+
+    const existing =
+        cart.find(item => item.id === productId);
+
+    if (existing) {
+
+        if (existing.quantity >= Number(product.stock)) {
+
+            alert("❌ មិនអាចបន្ថែមលើសចំនួនស្តុកបានទេ");
+
+            return;
+        }
+
+        existing.quantity += 1;
+
+    } else {
+
+        cart.push({
+
+            id: product.id,
+
+            name: product.name,
+
+            price: Number(product.sell_price || 0),
+
+            quantity: 1,
+
+            stock: Number(product.stock || 0)
+
+        });
+    }
+
+    showCart();
+}
+
+
+/* =========================
+   បង្ហាញ Cart
+========================= */
+
+function showCart() {
+
+    const cartItems =
+        document.getElementById("cartItems");
+
+    const cartTotal =
+        document.getElementById("cartTotal");
+
+    if (cart.length === 0) {
+
+        cartItems.innerHTML =
+            "មិនទាន់មានទំនិញក្នុងកន្ត្រក";
+
+        cartTotal.innerHTML =
+            "សរុប៖ 0៛";
+
+        return;
+    }
+
+    let total = 0;
+
+    let html = "";
+
+    cart.forEach((item, index) => {
+
+        const itemTotal =
+            item.price * item.quantity;
+
+        total += itemTotal;
+
+        html += `
+
+            <div class="cart-item">
+
+                <div class="cart-item-name">
+                    ${item.name}
+                </div>
+
+                <div>
+                    តម្លៃមួយ៖
+                    ${item.price.toLocaleString()}៛
+                </div>
+
+                <div class="quantity">
+
+                    ចំនួន៖
+
+                    <button onclick="changeQuantity(${index}, -1)">
+                        −
+                    </button>
+
+                    <strong>
+                        ${item.quantity}
+                    </strong>
+
+                    <button onclick="changeQuantity(${index}, 1)">
+                        +
+                    </button>
+
+                    <button
+                        class="remove-btn"
+                        onclick="removeFromCart(${index})"
+                    >
+                        🗑️
+                    </button>
+
+                </div>
+
+                <div>
+                    សរុបមុខនេះ៖
+                    <strong>
+                        ${itemTotal.toLocaleString()}៛
+                    </strong>
+                </div>
+
+            </div>
+        `;
+    });
+
+    cartItems.innerHTML = html;
+
+    cartTotal.innerHTML =
+        "សរុប៖ " + total.toLocaleString() + "៛";
+}
+
+
+/* =========================
+   ប្តូរចំនួន
+========================= */
+
+function changeQuantity(index, amount) {
+
+    const item = cart[index];
+
+    if (!item) return;
+
+    const newQuantity =
+        item.quantity + amount;
+
+    if (newQuantity <= 0) {
+
+        cart.splice(index, 1);
+
+        showCart();
+
+        return;
+    }
+
+    if (newQuantity > item.stock) {
+
+        alert("❌ លើសចំនួនស្តុក");
+
+        return;
+    }
+
+    item.quantity = newQuantity;
+
+    showCart();
+}
+
+
+/* =========================
+   លុបទំនិញចេញ
+========================= */
+
+function removeFromCart(index) {
+
+    cart.splice(index, 1);
+
+    showCart();
+}
+
+
+/* =========================
+   គណនាសរុប
+========================= */
+
+function getCartTotal() {
+
+    return cart.reduce(
+
+        (total, item) =>
+
+            total + (item.price * item.quantity),
+
+        0
+    );
+}
+
+
+/* =========================
+   Checkout
+========================= */
+
+function checkoutCart() {
+
+    if (cart.length === 0) {
+
+        alert("🛒 សូមជ្រើសរើសទំនិញជាមុនសិន");
+
+        return;
+    }
+
+    const name =
+        prompt("👤 សូមបញ្ចូលឈ្មោះរបស់អ្នក៖");
+
     if (!name) return;
 
-    const phone = prompt("📞 សូមបញ្ចូលលេខទូរស័ព្ទ៖");
+
+    const phone =
+        prompt("📞 សូមបញ្ចូលលេខទូរស័ព្ទ៖");
+
     if (!phone) return;
 
-    const address = prompt("📍 សូមបញ្ចូលអាសយដ្ឋានដឹកជញ្ជូន៖");
+
+    const address =
+        prompt("📍 សូមបញ្ចូលអាសយដ្ឋានដឹកជញ្ជូន៖");
+
     if (!address) return;
 
-    const quantity = prompt(
-        "🔢 សូមបញ្ចូលចំនួន " + product.name + "៖",
-        "1"
+
+    const total =
+        getCartTotal();
+
+
+    let orderText =
+        "ទំនិញក្នុងកម្ម៉ង់៖\n\n";
+
+
+    cart.forEach(item => {
+
+        orderText +=
+
+            item.name +
+            " × " +
+            item.quantity +
+            " = " +
+            (item.price * item.quantity)
+                .toLocaleString() +
+            "៛\n";
+
+    });
+
+
+    orderText +=
+        "\n💰 សរុប៖ " +
+        total.toLocaleString() +
+        "៛";
+
+
+    alert(
+        "📋 សូមពិនិត្យកម្ម៉ង់\n\n" +
+        orderText
     );
 
-    if (!quantity) return;
+
+    submitOrder(
+        name,
+        phone,
+        address,
+        total
+    );
+}
+
+
+/* =========================
+   បញ្ជូនកម្ម៉ង់ទៅ API
+========================= */
+
+async function submitOrder(
+    name,
+    phone,
+    address,
+    total
+) {
 
     try {
+
         const response = await fetch(
+
             "https://sovanna-coffee-api.onrender.com/api/orders",
+
             {
+
                 method: "POST",
+
                 headers: {
-                    "Content-Type": "application/json"
+
+                    "Content-Type":
+                        "application/json"
+
                 },
+
                 body: JSON.stringify({
+
                     customer_name: name,
+
                     phone: phone,
-                    address: address
+
+                    address: address,
+
+                    total: total,
+
+                    items: cart
+
                 })
+
             }
         );
 
-        const data = await response.json();
+
+        const data =
+            await response.json();
+
 
         if (response.ok) {
+
             alert(
+
                 "✅ កម្ម៉ង់បានទទួល!\n\n" +
-                "លេខកម្ម៉ង់: " + data.order_id + "\n" +
-                "ទំនិញ: " + product.name + "\n" +
-                "ចំនួន: " + quantity + "\n" +
-                "ឈ្មោះ: " + name + "\n" +
-                "ទូរស័ព្ទ: " + phone
+
+                "🔢 លេខកម្ម៉ង់: " +
+                data.order_id
+
             );
+
+            cart = [];
+
+            showCart();
+
         } else {
-            alert("❌ " + (data.error || "ការកម្ម៉ង់មិនបានសម្រេច"));
+
+            alert(
+
+                "❌ " +
+                (data.error ||
+                "ការកម្ម៉ង់មិនបានសម្រេច")
+
+            );
         }
 
     } catch (error) {
-        alert("❌ មិនអាចភ្ជាប់ទៅ Server បានទេ");
+
+        alert(
+            "❌ មិនអាចភ្ជាប់ទៅ Server បានទេ"
+        );
+
         console.error(error);
     }
 }
+
+
+showCart();
 
 </script>
 
