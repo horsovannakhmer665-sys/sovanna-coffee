@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>ហាងសុវណ្ណាលក់គ្រឿងកាហ្វេ</title>
 
 <style>
@@ -29,9 +30,18 @@ header p {
     margin: 8px 0 0;
 }
 
-.search {
+.top-bar {
     text-align: center;
-    padding: 20px;
+    padding: 15px;
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.search {
+    padding: 10px;
 }
 
 .search input {
@@ -41,6 +51,17 @@ header p {
     border: 1px solid #ccc;
     border-radius: 10px;
     font-size: 16px;
+}
+
+.cart-button {
+    margin-top: 10px;
+    background: #5b351f;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
 }
 
 .products {
@@ -86,6 +107,144 @@ header p {
     margin-top: 10px;
 }
 
+.stock {
+    margin-top: 8px;
+}
+
+.order-button {
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #5b351f;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.order-button:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+}
+
+/* CART */
+.cart-box {
+    display: none;
+    max-width: 700px;
+    margin: 20px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+
+.cart-item {
+    border-bottom: 1px solid #ddd;
+    padding: 12px 0;
+}
+
+.cart-item:last-child {
+    border-bottom: none;
+}
+
+.cart-name {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.quantity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.quantity button {
+    width: 35px;
+    height: 35px;
+    border: none;
+    border-radius: 8px;
+    background: #5b351f;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.remove {
+    margin-left: 10px;
+    background: #c62828 !important;
+}
+
+.total {
+    text-align: right;
+    font-size: 22px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+.checkout-button {
+    width: 100%;
+    margin-top: 15px;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: #168a3a;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+/* CHECKOUT */
+.checkout-box {
+    display: none;
+    max-width: 600px;
+    margin: 20px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+
+.checkout-box input,
+.checkout-box textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.confirm-button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: #168a3a;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.back-button {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #777;
+    color: white;
+    font-size: 16px;
+}
+
+.empty {
+    text-align: center;
+    padding: 30px;
+    color: #777;
+}
+
 footer {
     margin-top: 30px;
     background: #333;
@@ -103,20 +262,86 @@ footer {
     <p>ទំនិញ និងតម្លៃរបស់ហាង</p>
 </header>
 
-<div class="search">
-    <input type="text" id="search" placeholder="🔎 ស្វែងរកទំនិញ...">
+<div class="top-bar">
+
+    <div class="search">
+        <input
+            type="text"
+            id="search"
+            placeholder="🔎 ស្វែងរកទំនិញ..."
+        >
+    </div>
+
+    <button class="cart-button" onclick="showCart()">
+        🛒 កន្ត្រក (<span id="cartCount">0</span>)
+    </button>
+
 </div>
 
 <div class="products" id="products">
+    <div class="empty">កំពុងទាញទំនិញ...</div>
+</div>
 
-    <div class="card">
-        <img src="../images/coffee.jpg" alt="កាហ្វេ">
-        <div class="card-content">
-            <h2>កាហ្វេ</h2>
-            <div class="category">គ្រឿងម្សៅ</div>
-            <div class="price">25,000៛</div>
-        </div>
+<!-- CART -->
+<div class="cart-box" id="cartBox">
+
+    <h2>🛒 កន្ត្រកទំនិញ</h2>
+
+    <div id="cartItems"></div>
+
+    <div class="total">
+        សរុប៖ <span id="cartTotal">0</span>៛
     </div>
+
+    <button
+        class="checkout-button"
+        onclick="checkoutCart()"
+    >
+        បន្តកម្ម៉ង់
+    </button>
+
+</div>
+
+<!-- CHECKOUT -->
+<div class="checkout-box" id="checkoutBox">
+
+    <h2>📝 ព័ត៌មានអតិថិជន</h2>
+
+    <input
+        type="text"
+        id="customerName"
+        placeholder="ឈ្មោះអតិថិជន"
+    >
+
+    <input
+        type="text"
+        id="phone"
+        placeholder="លេខទូរស័ព្ទ"
+    >
+
+    <textarea
+        id="address"
+        rows="4"
+        placeholder="អាសយដ្ឋាន"
+    ></textarea>
+
+    <h3>
+        សរុប៖ <span id="checkoutTotal">0</span>៛
+    </h3>
+
+    <button
+        class="confirm-button"
+        onclick="submitOrder()"
+    >
+        ✅ បញ្ជាក់កម្ម៉ង់
+    </button>
+
+    <button
+        class="back-button"
+        onclick="backToCart()"
+    >
+        ← ត្រឡប់ទៅកន្ត្រក
+    </button>
 
 </div>
 
@@ -125,22 +350,610 @@ footer {
 </footer>
 
 <script>
-const search = document.getElementById("search");
-const cards = document.querySelectorAll(".card");
 
-search.addEventListener("input", function () {
-    const text = search.value.toLowerCase();
+const API_URL =
+    "https://sovanna-coffee-api.onrender.com";
 
-    cards.forEach(card => {
-        const name = card.innerText.toLowerCase();
+let products = [];
+let cart = [];
 
-        if (name.includes(text)) {
-            card.style.display = "";
-        } else {
-            card.style.display = "none";
+
+/* =========================
+   LOAD PRODUCTS
+========================= */
+
+async function loadProducts() {
+
+    try {
+
+        const response = await fetch(
+            API_URL + "/api/products"
+        );
+
+        if (!response.ok) {
+            throw new Error("API Error");
         }
+
+        products = await response.json();
+
+        displayProducts(products);
+
+    } catch (error) {
+
+        console.error(error);
+
+        document.getElementById("products").innerHTML =
+            '<div class="empty">មិនអាចទាញទំនិញបានទេ</div>';
+    }
+}
+
+
+/* =========================
+   DISPLAY PRODUCTS
+========================= */
+
+function displayProducts(list) {
+
+    const container =
+        document.getElementById("products");
+
+    container.innerHTML = "";
+
+    if (list.length === 0) {
+
+        container.innerHTML =
+            '<div class="empty">រកមិនឃើញទំនិញ</div>';
+
+        return;
+    }
+
+    list.forEach(product => {
+
+        const card =
+            document.createElement("div");
+
+        card.className = "card";
+
+        let imageHTML = "";
+
+        if (product.image) {
+
+            imageHTML = `
+                <img
+                    src="${getImageURL(product.image)}"
+                    alt="${product.name}"
+                >
+            `;
+
+        } else {
+
+            imageHTML = `
+                <div style="
+                    height:200px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    background:#eee;
+                    font-size:50px;
+                ">
+                    ☕
+                </div>
+            `;
+        }
+
+        const stock =
+            Number(product.stock || 0);
+
+        card.innerHTML = `
+
+            ${imageHTML}
+
+            <div class="card-content">
+
+                <h2>${product.name}</h2>
+
+                <div class="category">
+                    ${product.category || ""}
+                </div>
+
+                <div class="price">
+                    ${formatPrice(product.sell_price)}៛
+                </div>
+
+                <div class="stock">
+                    ស្តុក: ${stock}
+                </div>
+
+                <button
+                    class="order-button"
+                    onclick="addToCart(${product.id})"
+                    ${stock <= 0 ? "disabled" : ""}
+                >
+                    🛒 កម្ម៉ង់
+                </button>
+
+            </div>
+        `;
+
+        container.appendChild(card);
     });
-});
+}
+
+
+/* =========================
+   IMAGE URL
+========================= */
+
+function getImageURL(image) {
+
+    if (!image) return "";
+
+    if (image.startsWith("http")) {
+        return image;
+    }
+
+    return "https://horsovannakhmer665-sys.github.io/sovanna-coffee/images/" +
+        encodeURIComponent(image);
+}
+
+
+/* =========================
+   FORMAT PRICE
+========================= */
+
+function formatPrice(price) {
+
+    return Number(price || 0)
+        .toLocaleString("en-US");
+}
+
+
+/* =========================
+   ADD TO CART
+========================= */
+
+function addToCart(productId) {
+
+    const product =
+        products.find(p => p.id === productId);
+
+    if (!product) return;
+
+   
+    const existing =
+        cart.find(item => item.id === productId);
+
+    if (existing) {
+
+        if (existing.quantity >= Number(product.stock)) {
+
+            alert("ចំនួនលើសស្តុក");
+            return;
+        }
+
+        existing.quantity++;
+
+    } else {
+
+        cart.push({
+            id: product.id,
+            name: product.name,
+            sell_price: Number(product.sell_price || 0),
+            quantity: 1
+        });
+    }
+
+    updateCartCount();
+
+    alert(
+        "បានបន្ថែម " +
+        product.name +
+        " ចូលកន្ត្រក"
+    );
+}
+
+
+/* =========================
+   CART COUNT
+========================= */
+
+function updateCartCount() {
+
+    let count = 0;
+
+    cart.forEach(item => {
+        count += item.quantity;
+    });
+
+    document.getElementById("cartCount")
+        .textContent = count;
+}
+
+
+/* =========================
+   SHOW CART
+========================= */
+
+function showCart() {
+
+    document.getElementById("checkoutBox")
+        .style.display = "none";
+
+    const box =
+        document.getElementById("cartBox");
+
+    box.style.display = "block";
+
+    renderCart();
+
+    window.scrollTo({
+        top: box.offsetTop - 20,
+        behavior: "smooth"
+    });
+}
+
+
+/* =========================
+   RENDER CART
+========================= */
+
+function renderCart() {
+
+    const container =
+        document.getElementById("cartItems");
+
+    container.innerHTML = "";
+
+    if (cart.length === 0) {
+
+        container.innerHTML =
+            '<div class="empty">កន្ត្រកទទេ</div>';
+
+        document.getElementById("cartTotal")
+            .textContent = "0";
+
+        return;
+    }
+
+    cart.forEach((item, index) => {
+
+        const subtotal =
+            item.sell_price * item.quantity;
+
+        const div =
+            document.createElement("div");
+
+        div.className = "cart-item";
+
+        div.innerHTML = `
+
+            <div class="cart-name">
+                ${item.name}
+            </div>
+
+            <div>
+                ${formatPrice(item.sell_price)}៛ ×
+                ${item.quantity}
+                =
+                <b>${formatPrice(subtotal)}៛</b>
+            </div>
+
+            <div class="quantity">
+
+                <button
+                    onclick="changeQuantity(${index}, -1)"
+                >
+                    −
+                </button>
+
+                <span>
+                    ${item.quantity}
+                </span>
+
+                <button
+                    onclick="changeQuantity(${index}, 1)"
+                >
+                    +
+                </button>
+
+                <button
+                    class="remove"
+                    onclick="removeFromCart(${index})"
+                >
+                    🗑️
+                </button>
+
+            </div>
+        `;
+
+        container.appendChild(div);
+    });
+
+    document.getElementById("cartTotal")
+        .textContent =
+        formatPrice(getCartTotal());
+}
+
+
+/* =========================
+   CHANGE QUANTITY
+========================= */
+
+function changeQuantity(index, amount) {
+
+    const item = cart[index];
+
+    if (!item) return;
+
+    const product =
+        products.find(p => p.id === item.id);
+
+    if (!product) return;
+
+    item.quantity += amount;
+
+    if (item.quantity <= 0) {
+
+        cart.splice(index, 1);
+
+    } else if (
+        item.quantity > Number(product.stock)
+    ) {
+
+        item.quantity =
+            Number(product.stock);
+
+        alert("ចំនួនលើសស្តុក");
+    }
+
+    updateCartCount();
+
+    renderCart();
+}
+
+
+/* =========================
+   REMOVE
+========================= */
+
+function removeFromCart(index) {
+
+    cart.splice(index, 1);
+
+    updateCartCount();
+
+    renderCart();
+}
+
+
+/* =========================
+   TOTAL
+========================= */
+
+function getCartTotal() {
+
+    let total = 0;
+
+    cart.forEach(item => {
+
+        total +=
+            item.sell_price *
+            item.quantity;
+    });
+
+    return total;
+}
+
+
+/* =========================
+   CHECKOUT
+========================= */
+
+function checkoutCart() {
+
+    if (cart.length === 0) {
+
+        alert("សូមជ្រើសរើសទំនិញជាមុន");
+        return;
+    }
+
+    document.getElementById("cartBox")
+        .style.display = "none";
+
+    document.getElementById("checkoutBox")
+        .style.display = "block";
+
+    document.getElementById("checkoutTotal")
+        .textContent =
+        formatPrice(getCartTotal());
+
+    window.scrollTo({
+        top: document.getElementById("checkoutBox").offsetTop - 20,
+        behavior: "smooth"
+    });
+}
+
+
+/* =========================
+   BACK TO CART
+========================= */
+
+function backToCart() {
+
+    document.getElementById("checkoutBox")
+        .style.display = "none";
+
+    showCart();
+}
+
+
+/* =========================
+   SUBMIT ORDER
+========================= */
+
+async function submitOrder() {
+
+    const customerName =
+        document.getElementById("customerName")
+            .value.trim();
+
+    const phone =
+        document.getElementById("phone")
+            .value.trim();
+
+    const address =
+        document.getElementById("address")
+            .value.trim();
+
+    if (!customerName ||
+        !phone ||
+        !address) {
+
+        alert(
+            "សូមបំពេញឈ្មោះ លេខទូរស័ព្ទ និងអាសយដ្ឋាន"
+        );
+
+        return;
+    }
+
+    if (cart.length === 0) {
+
+        alert("កន្ត្រកទទេ");
+
+        return;
+    }
+
+    const total =
+        getCartTotal();
+
+    const orderData = {
+
+        customer_name: customerName,
+
+        phone: phone,
+
+        address: address,
+
+        total: total,
+
+        items: cart.map(item => ({
+
+            id: item.id,
+
+            name: item.name,
+
+            sell_price: item.sell_price,
+
+            quantity: item.quantity
+        }))
+    };
+
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL + "/api/orders",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(orderData)
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.error ||
+                "កម្ម៉ង់មិនបាន"
+            );
+        }
+
+
+        alert(
+            "✅ កម្ម៉ង់បានជោគជ័យ!\n\n" +
+            "លេខកម្ម៉ង់: #" +
+            result.order_id +
+            "\n" +
+            "សរុប: " +
+            formatPrice(result.total) +
+            "៛"
+        );
+
+
+        cart = [];
+
+        updateCartCount();
+
+        document.getElementById("checkoutBox")
+            .style.display = "none";
+
+        document.getElementById("cartBox")
+            .style.display = "none";
+
+        document.getElementById("customerName")
+            .value = "";
+
+        document.getElementById("phone")
+            .value = "";
+
+        document.getElementById("address")
+            .value = "";
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "❌ កម្ម៉ង់មិនបាន\n\n" +
+            error.message
+        );
+    }
+}
+
+
+/* =========================
+   SEARCH
+========================= */
+
+document.getElementById("search")
+    .addEventListener(
+        "input",
+        function () {
+
+            const text =
+                this.value.toLowerCase();
+
+            const filtered =
+                products.filter(product =>
+                    product.name
+                        .toLowerCase()
+                        .includes(text)
+                );
+
+            displayProducts(filtered);
+        }
+    );
+
+
+/* =========================
+   START
+========================= */
+
+loadProducts();
+
 </script>
 
 </body>
